@@ -105,6 +105,7 @@ const Orders = () => {
 
   useEffect(() => {
     fetchOrders();
+    console.log("Orders data: ", orders);
   }, []);
 
   return (

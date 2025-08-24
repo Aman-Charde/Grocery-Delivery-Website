@@ -63,14 +63,23 @@
 
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
+import User from "../models/User.js"; 
 
-// Place Order COD : /api/order/cod
 export const placeOrderCOD = async (req, res) => {
     try {
-        const { userId, items, address } = req.body;
+        const { userId, items, address } = req.body; // yaha `address` = addressId
 
         if (!address || items.length === 0) {
             return res.json({ success: false, message: "Invalid data" });
+        }
+
+        // Fetch address from user
+        const user = await User.findById(userId);
+        if (!user) return res.json({ success: false, message: "User not found" });
+
+        const selectedAddress = user.addresses.id(address); // 🔹 addressId se address nikalo
+        if (!selectedAddress) {
+            return res.json({ success: false, message: "Address not found" });
         }
 
         // Calculate Amount Using Items
@@ -82,21 +91,12 @@ export const placeOrderCOD = async (req, res) => {
         // Add Tax Charge (2%)
         amount += Math.floor(amount * 0.02);
 
-        // 🔹 Embed the address into order (snapshot of that moment)
+        // 🔹 Save order with embedded address snapshot
         await Order.create({
             userId,
             items,
             amount,
-            address: {
-                firstName: address.firstName,
-                lastName: address.lastName,
-                street: address.street,
-                city: address.city,
-                state: address.state,
-                zipcode: address.zipcode,
-                country: address.country,
-                phone: address.phone,
-            },
+            address: selectedAddress.toObject(),  // 🔹 full object embed karo
             paymentType: "COD",
         });
 
